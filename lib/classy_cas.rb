@@ -28,7 +28,7 @@ module ClassyCAS
     set :client_sites, [ "http://localhost:3001", 'http://localhost:3002'] unless settings.respond_to?(:client_sites)
     
     set :root, File.dirname(__FILE__)
-    set :public, File.join(root, "/../public")
+    set :public_folder, File.join(root, "/../public")
     
     set :warden_strategies, [:simple] unless settings.respond_to?(:warden_strategies)
     
@@ -45,7 +45,7 @@ module ClassyCAS
     end
       
     configure :development do
-      set :dump_errors
+      enable :dump_errors
     end
     
     get "/" do
