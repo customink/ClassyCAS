@@ -1,3 +1,5 @@
+require 'warden'
+
 module ClassyCAS
   module Strategies
     class Base < Warden::Strategies::Base
