@@ -1,6 +1,6 @@
 require 'rubygems'
 require 'bundler'
 Bundler.require :default, :development
-require './lib/classy_cas'
+require_relative 'classy_cas'
 
 run ClassyCAS::Server
