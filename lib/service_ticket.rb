@@ -23,7 +23,10 @@ class ServiceTicket
   end
   
   def valid_for_service?(url)
-    service_url == url
+    url = Addressable::URI.parse(url)
+
+    # Don't include query strings in validation
+    service_url == url.omit(:query).to_s
   end
   
   def ticket

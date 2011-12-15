@@ -56,14 +56,14 @@ module ClassyCAS
       @service_url = Addressable::URI.parse(params[:service])
       @renew = [true, "true", "1", 1].include?(params[:renew])
       @gateway = [true, "true", "1", 1].include?(params[:gateway])
-    
+
       if @renew
         @login_ticket = LoginTicket.create!(settings.redis)
         render_login
       elsif @gateway
         if @service_url
           if sso_session
-            st = ServiceTicket.new(params[:service], sso_session.username)
+            st = ServiceTicket.new( @service_url.omit(:query).to_s, sso_session.username)
             st.save!(settings.redis)
             redirect_url = @service_url.clone
             if @service_url.query_values.nil?
@@ -82,7 +82,7 @@ module ClassyCAS
       else
         if sso_session
           if @service_url
-            st = ServiceTicket.new(params[:service], sso_session.username)
+            st = ServiceTicket.new(@service_url.omit(:query).to_s, sso_session.username)
             st.save!(settings.redis)
             redirect_url = @service_url.clone
             if @service_url.query_values.nil?
@@ -100,27 +100,34 @@ module ClassyCAS
         end
       end
     end
-    
+
     post "/login" do
       username = params[:username]
       password = params[:password]
-    
-      service_url = params[:service]
-    
+
+      service_url = Addressable::URI.parse(params[:service])
+
       warn = [true, "true", "1", 1].include? params[:warn]
       # Spec is undefined about what to do without these params, so redirecting to credential requestor
       redirect "/login", 303 unless username && password && login_ticket
       # Failures will throw back to self, which we've registered with Warden to handle login failures
       warden.authenticate!(:scope => :cas, :action => 'unauthenticated')
-      
+
       tgt = TicketGrantingTicket.create!(username, settings.redis)
       cookie = tgt.to_cookie(request.host)
       response.set_cookie(*cookie)
-    
+
       if service_url && !warn
-        st = ServiceTicket.new(service_url, username)
+        st = ServiceTicket.new( service_url.omit(:query), username)
         st.save!(settings.redis)
-        redirect service_url + "?ticket=#{st.ticket}", 303
+
+        redirect_url = service_url.clone
+        if service_url.query_values.nil?
+          redirect_url.query_values = service_url.query_values = {:ticket => st.ticket}
+        else
+          redirect_url.query_values = service_url.query_values.merge(:ticket => st.ticket)
+        end
+        redirect redirect_url.to_s, 303
       else
         render_logged_in
       end
