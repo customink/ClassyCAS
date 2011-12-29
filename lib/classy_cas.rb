@@ -22,36 +22,51 @@ require_relative 'service_ticket'
 require_relative 'ticket_granting_ticket'
 require_relative 'strategies'
 
-module ClassyCAS 
+module ClassyCAS
   class Server < Sinatra::Base
-    set :redis, Proc.new { Redis.new } unless settings.respond_to?(:redis)
-    set :client_sites, [ "http://localhost:3001", 'http://localhost:3002'] unless settings.respond_to?(:client_sites)
-    
-    set :root, File.dirname(__FILE__)
-    set :public_folder, File.join(root, "/../public")
-    
-    set :warden_strategies, [:simple] unless settings.respond_to?(:warden_strategies)
-    
+
+    set :redis,               Proc.new { Redis.new }
+    set :client_sites,        [ 'http://localhost:3001', 'http://localhost:3002' ]
+    set :warden_strategies,   [ :simple ]
+    set :warden_failure_app,  Proc.new { self }
+
+    set :root,                File.dirname(__FILE__)
+    set :public_folder,       Proc.new { File.join(root, "/../public") }
+
+    # Since Sinatra's #set method works at the Class-level, it is not easy to configure
+    # ClassyCAS when sub-classing it. This DSL method provides a clean way to do just that
+    #
+    #     class MyServer < ClassyCAS::Server
+    #       classy_cas do
+    #         set :warden_failure_app, MyFailureApp
+    #       end
+    #     end
+    #
+    def self.classy_cas( &block )
+      Server.instance_eval( &block )
+    end
+
     use Rack::Session::Cookie
     use Rack::Flash, :accessorize => [:notice, :error]
     use Warden::Manager do |manager|
-      manager.failure_app = self
+      manager.failure_app = settings.warden_failure_app
       manager.default_scope = :cas
-    
-      manager.scope_defaults(:cas, 
+
+      manager.scope_defaults(:cas,
         :strategies => settings.warden_strategies,
-        :action => "login"
+        :action     => "login"
       )
     end
-      
+
     configure :development do
       enable :dump_errors
+      enable :logging
     end
-    
+
     get "/" do
       redirect "/login"
     end
-    
+
     get "/login" do
       @service_url = Addressable::URI.parse(params[:service])
       @renew = [true, "true", "1", 1].include?(params[:renew])
@@ -101,6 +116,14 @@ module ClassyCAS
       end
     end
 
+    post '/unauthenticated' do
+      @service_url = Addressable::URI.parse(params[:service])
+      flash[:error] = "Invalid username or password"
+      @login_ticket = LoginTicket.create!(settings.redis) unless login_ticket
+
+      render_login
+    end
+
     post "/login" do
       username = params[:username]
       password = params[:password]
@@ -110,8 +133,9 @@ module ClassyCAS
       warn = [true, "true", "1", 1].include? params[:warn]
       # Spec is undefined about what to do without these params, so redirecting to credential requestor
       redirect "/login", 303 unless username && password && login_ticket
-      # Failures will throw back to self, which we've registered with Warden to handle login failures
-      warden.authenticate!(:scope => :cas, :action => 'unauthenticated')
+      # Failures will throw back to the settings.warden_failure_app value which is registered with Warnden to handle login failure.
+      # By default settings.warden_failure_app is self (but can be overridden to any Rack App)
+      warden.authenticate!(:scope => :cas, :action => 'unauthenticated' )
 
       tgt = TicketGrantingTicket.create!(username, settings.redis)
       cookie = tgt.to_cookie(request.host)
@@ -167,15 +191,15 @@ module ClassyCAS
       @logout = true
       render_login
     end
-        
+
     def render_login
       erb :login
     end
-    
+
     def render_logged_in
       erb :logged_in
     end
-    
+
     # Override to add user info back to client applications
     def append_user_info(username, xml)
     end
