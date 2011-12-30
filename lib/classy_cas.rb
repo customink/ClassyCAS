@@ -189,7 +189,7 @@ module ClassyCAS
 
       @login_ticket = LoginTicket.create!(settings.redis)
       @logout = true
-      render_login
+      render_logout
     end
 
     def render_login
@@ -200,19 +200,26 @@ module ClassyCAS
       erb :logged_in
     end
 
-    # Override to add user info back to client applications
-    def append_user_info(username, xml)
+    def render_logout
+      render_login
     end
+
+    # Override to add user info back to client applications
+    def append_user_info(username, xml); end
 
     def logout_user
       @sso_session.destroy!(settings.redis)
       response.delete_cookie(*sso_session.to_cookie(request.host))
       warden.logout(:cas)
-      flash.now[:notice] = "Logout Successful."
-      if @url
-        msg = "  The application you just logged out of has provided a link it would like you to follow."
-        msg += "Please <a href=\"#{@url}\">click here</a> to access <a href=\"#{@url}\">#{@url}</a>"      
-        flash.now[:notice] += msg
+      flash.now[:notice] = logged_out_notice
+    end
+
+    def logged_out_notice
+      "Logout Successful.".tap do |notice|
+        if @url
+          notice << "  The application you just logged out of has provided a link it would like you to follow."
+          notice << "Please <a href=\"#{@url}\">click here</a> to access <a href=\"#{@url}\">#{@url}</a>"      
+        end
       end
     end
 
