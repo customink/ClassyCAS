@@ -118,7 +118,7 @@ module ClassyCAS
 
     post '/unauthenticated' do
       @service_url = Addressable::URI.parse(params[:service])
-      flash[:error] = "Invalid username or password"
+      flash[:error] = env['warden.options'][:message] || "Invalid username or password"
       @login_ticket = LoginTicket.create!(settings.redis) unless login_ticket
 
       render_login
