@@ -208,7 +208,7 @@ module ClassyCAS
     def append_user_info(username, xml); end
 
     def logout_user
-      @sso_session.destroy!(settings.redis)
+      sso_session.destroy!(settings.redis)
       response.delete_cookie(*sso_session.to_cookie(request.host))
       warden.logout(:cas)
       flash.now[:notice] = logged_out_notice
