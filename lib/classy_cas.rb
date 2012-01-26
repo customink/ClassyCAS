@@ -9,6 +9,12 @@ require 'rack'
 require 'rack-flash' 
 require 'warden'
 
+# Attempt to load Airbrake
+begin
+  require 'airbrake'
+rescue LoadError
+end
+
 if RUBY_VERSION < "1.9"
   require 'backports'
   require 'system_timer'
@@ -24,6 +30,11 @@ require_relative 'strategies'
 
 module ClassyCAS
   class Server < Sinatra::Base
+
+    if defined?(Airbrake)
+      enable :raise_errors
+      use Airbrake::Rack
+    end
 
     set :redis,               Proc.new { Redis.new }
     set :client_sites,        [ 'http://localhost:3001', 'http://localhost:3002' ]
