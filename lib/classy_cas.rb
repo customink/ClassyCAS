@@ -89,7 +89,7 @@ module ClassyCAS
       elsif @gateway
         if @service_url
           if sso_session
-            st = ServiceTicket.new( @service_url.omit(:query).to_s, sso_session.username)
+            st = ServiceTicket.new( @service_url, sso_session.username)
             st.save!(settings.redis)
             redirect_url = @service_url.clone
             if @service_url.query_values.nil?
@@ -108,7 +108,7 @@ module ClassyCAS
       else
         if sso_session
           if @service_url
-            st = ServiceTicket.new(@service_url.omit(:query).to_s, sso_session.username)
+            st = ServiceTicket.new(@service_url, sso_session.username)
             st.save!(settings.redis)
             redirect_url = @service_url.clone
             if @service_url.query_values.nil?
@@ -153,7 +153,7 @@ module ClassyCAS
       response.set_cookie(*cookie)
 
       if service_url && !warn
-        st = ServiceTicket.new( service_url.omit(:query), username)
+        st = ServiceTicket.new( service_url, username)
         st.save!(settings.redis)
 
         redirect_url = service_url.clone

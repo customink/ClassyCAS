@@ -1,3 +1,4 @@
+
 class ServiceTicket
   class << self
     def find!(ticket, store)
@@ -18,7 +19,9 @@ class ServiceTicket
   attr_reader :username, :service_url
   
   def initialize(service_url, username)
-    @service_url = service_url
+    service_url = Addressable::URI.parse(service_url) unless service_url.is_a?(Addressable::URI)
+
+    @service_url = normalize(service_url)
     @username = username
   end
   
@@ -26,7 +29,7 @@ class ServiceTicket
     url = Addressable::URI.parse(url)
 
     # Don't include query strings in validation
-    service_url == url.omit(:query).to_s
+    service_url == normalize(url)
   end
   
   def ticket
@@ -46,4 +49,11 @@ class ServiceTicket
     end
     
   end
+
+private
+
+  def normalize( url )
+    url.omit(:query).to_s
+  end
+
 end

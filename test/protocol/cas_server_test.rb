@@ -405,23 +405,19 @@ class CasServerTest < Test::Unit::TestCase
             
           end
           should "redirect to /unauthorized but render /login" do
-            assert last_response.redirect?
-            follow_redirect!
             assert_have_selector "input[name='username']"
             assert_have_selector "input[name='password']"
             assert_have_selector "input[name='lt']"
           end
 
           should "preserve the service url in a hidden field" do
-            assert last_response.redirect?
-            follow_redirect!
             assert_have_selector "input[name='service']", :value => 'foo'
           end
           
           # RECOMMENDED
           # Will implement with some kind of flash message
           should "display an error message describing why login failed" do
-            assert_match /Login was not successful/, last_response.body
+            assert_have_selector "div.message.error p", :content => "Invalid username or password"
           end
 
           # RECOMMENDED
@@ -567,7 +563,7 @@ class CasServerTest < Test::Unit::TestCase
         end
 
         context "the ticket provided was valid, but the service specified did not match the service associated with the ticket" do
-          setup { get "/serviceValidate", :service => "http://example.com", :ticket => @st.ticket }
+          setup { get "/serviceValidate", :service => "http://example.org", :ticket => @st.ticket }
           should "respond with INVALID_SERVICE" do
 
             assert_invalid_service_xml_response(last_response)
@@ -666,7 +662,7 @@ class CasServerTest < Test::Unit::TestCase
           end
 
           context "the ticket provided was valid, but the service specified did not match the service associated with the ticket" do
-            setup { get "/proxyValidate", :service => "http://example.com", :ticket => @st.ticket }
+            setup { get "/proxyValidate", :service => "http://example.org", :ticket => @st.ticket }
             should "respond with INVALID_SERVICE" do
 
               assert_invalid_service_xml_response(last_response)
@@ -699,8 +695,8 @@ class CasServerTest < Test::Unit::TestCase
       # 3.1.1
       context "properties" do
         should "be valid only for the service that was specified to /login when they were generated" do
-          assert @st.valid_for_service?(@test_service_url)
-          assert !@st.valid_for_service?("http://google.com")
+          assert @st.valid_for_service?(@test_service_url), "#{@test_service_url} is not valid for the service but should be"
+          assert !@st.valid_for_service?("http://google.com"), "Is valid, but should not be"
         end
 
         should "not include the service identifier in the service ticket" do
