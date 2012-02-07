@@ -140,7 +140,7 @@ module ClassyCAS
 
       warn = [true, "true", "1", 1].include? params[:warn]
       # Spec is undefined about what to do without these params, so redirecting to credential requestor
-      redirect "/login", 303 unless username && password && login_ticket
+      redirect "/login?service=#{service_url}", 303 unless username && password && login_ticket
       # Failures will throw back to the settings.warden_failure_app value which is registered with Warnden to handle login failure.
       # By default settings.warden_failure_app is self (but can be overridden to any Rack App)
       warden.authenticate!(:scope => :cas, :action => 'unauthenticated' )
