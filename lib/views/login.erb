@@ -1,24 +1,22 @@
     <div id="box">
       <% if @logout %>
-		<% settings.client_sites.each do |site_url| %>		
-	      <iframe src="<%= site_url %>/cas_logout" style="display:none">     
-	      </iframe>
-		<% end %>
+        <% settings.client_sites.each do |site_url| %>
+          <iframe src="<%= site_url %>/cas_logout" style="display:none"></iframe>
+        <% end %>
       <% end %>
       <div class="block" id="block-login">
         <h2>Login</h2>
         <div class="content login">
           <div class="flash">
-            <%# TODO: fix issues with rack flash%>
-            <% if flash.has?(:error) %>
-            <div class="message error">
-              <p><%= flash[:error]%></p>
-            </div>
+            <% if flash.include?(:error) %>
+              <div class="message error">
+                <p><%= flash[:error]%></p>
+              </div>
             <% end %>
-            <% if flash.has?(:notice) %>
-            <div class="message notice">
-              <p><%= flash[:notice]%></p>
-            </div>
+            <% if flash.include?(:notice) %>
+              <div class="message notice">
+                <p><%= flash[:notice]%></p>
+              </div>
             <% end %>
           </div>
           <form action='/login' method='post' class ='form login'>
@@ -35,9 +33,9 @@
                 <label class="label right">Password</label>
               </div>
               <div class="right">
-                <input id='password' name='password' type='password' class="text_field"/> 
+                <input id='password' name='password' type='password' class="text_field"/>
               </div>
-              <input name='lt' type='hidden' value='<%= @login_ticket.ticket %>' /> 
+              <input name='lt' type='hidden' value='<%= @login_ticket.ticket %>' />
               <input name='warn' type='hidden' /> 
               <% if @service_url %>
                 <input name='service' type='hidden' value='<%= @service_url %>' />

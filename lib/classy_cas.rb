@@ -3,10 +3,10 @@ require 'bundler'
 Bundler.require
 # Bundler.require doesn't seem to be pulling this in when used as gem...
 require 'sinatra'
+require 'sinatra/flash'
 require 'redis'
 require 'nokogiri'
 require 'rack'
-require 'rack-flash' 
 require 'warden'
 
 # Attempt to load Airbrake
@@ -15,13 +15,9 @@ begin
 rescue LoadError
 end
 
-if RUBY_VERSION < "1.9"
-  require 'backports'
-  require 'system_timer'
-end
-
 require 'addressable/uri'
 
+require_relative 'classy_cas/version'
 require_relative 'login_ticket'
 require_relative 'proxy_ticket'
 require_relative 'service_ticket'
@@ -57,8 +53,9 @@ module ClassyCAS
       Server.instance_eval( &block )
     end
 
+    enable :sessions
+    register Sinatra::Flash
     use Rack::Session::Cookie
-    use Rack::Flash, :accessorize => [:notice, :error]
     use Warden::Manager do |manager|
       manager.failure_app = settings.warden_failure_app
       manager.default_scope = :cas
@@ -129,7 +126,7 @@ module ClassyCAS
 
     post '/unauthenticated' do
       @service_url = Addressable::URI.parse(params[:service])
-      flash[:error] = env['warden.options'][:message] || "Invalid username or password"
+      flash.now[:error] = env['warden.options'][:message] || "Invalid username or password"
       @login_ticket = LoginTicket.create!(settings.redis) unless login_ticket
 
       render_login
@@ -167,7 +164,7 @@ module ClassyCAS
         render_logged_in
       end
     end
-    
+
     get %r{(proxy|service)Validate} do
       service_url = params[:service]
       ticket = params[:ticket]

@@ -1,11 +1,4 @@
-unless Kernel.method_defined?(:require_relative)
-  require 'rubygems'
-  require 'bundler'
-  Bundler.require :test, :default
-end
-
 require_relative "../test_helper"
-require "rack/flash/test"
 
 class CasServerTest < Test::Unit::TestCase
 
