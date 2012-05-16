@@ -191,7 +191,11 @@ module ClassyCAS
     
     
     get '/logout' do
-      @url = params[:url]
+      # TODO: Figure out what the different is between a Service URL and the
+      # return URL as sent by the host application and how that affects displaying
+      # flash messaging as well as the "service" hidden INPUT.
+      # For now, just duplicate them.
+      @url = @service_url = params[:url]
 
       logout_user if sso_session
 
